@@ -27,10 +27,10 @@ type PortsAndServersRuleset struct {
 type RuleItem struct {
 	Server   string `yaml:"server"`
 	Protocol string `yaml:"protocol"`
-	TCPMin      int    `yaml:"allowed_tcp_port_min"`
-	TCPMax      int    `yaml:"allowed_tcp_port_max"`
-    UDPMin      int    `yaml:"allowed_udp_port_min"`
-	UDPMax      int    `yaml:"allowed_udp_port_max"`
+	TCPMin   int    `yaml:"allowed_tcp_port_min"`
+	TCPMax   int    `yaml:"allowed_tcp_port_max"`
+	UDPMin   int    `yaml:"allowed_udp_port_min"`
+	UDPMax   int    `yaml:"allowed_udp_port_max"`
 }
 
 func main() {
@@ -39,11 +39,12 @@ func main() {
 	p := getYaml()
 
 	// To access a specific port / server
-	fmt.Printf("Port %v is allowed on %v\n", p[0].Rule[0].TCPMax, p[0].Rule[0].Server)
+	//fmt.Printf("Port %v is allowed on %v\n", p[0].Rule[0].TCPMax, p[0].Rule[0].Server)
 
 	ports := getCSV()
 
 	for _, port := range ports {
+
 		if port.Port == 0 {
 			continue
 		} else {
@@ -51,32 +52,63 @@ func main() {
 			switch {
 			case strings.HasPrefix(port.Server, "splunk"):
 				//fmt.Printf("row %v of the csv: This is a splunk server\n", i+2)
-				if comparePort(port.Port, p[2].Rule[0].TCPMin, p[2].Rule[0].TCPMax) {
-					continue
+				if port.Protocol == "tcp" {
+					if comparePort(port.Port, p[2].Rule[0].TCPMin, p[2].Rule[0].TCPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				} else {
-					fmt.Printf("hey this port shouldn't be here! (%v on %v)\n", port.Port, port.Server)
+					if comparePort(port.Port, p[2].Rule[0].UDPMin, p[2].Rule[0].UDPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				}
 			case strings.HasPrefix(port.Server, "ssh"):
 				//fmt.Printf("row %v of the csv: This is a ssh server\n", i+2)
-				if comparePort(port.Port, p[1].Rule[0].TCPMin, p[1].Rule[0].TCPMax) {
-					continue
+				if port.Protocol == "tcp" {
+					if comparePort(port.Port, p[1].Rule[0].TCPMin, p[1].Rule[0].TCPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				} else {
-					fmt.Printf("hey this port shouldn't be here! (%v on %v)\n", port.Port, port.Server)
+					if comparePort(port.Port, p[1].Rule[0].UDPMin, p[1].Rule[0].UDPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				}
 			case strings.HasPrefix(port.Server, "lb"):
 				//fmt.Printf("row %v of the csv: This is a lb server\n", i+2)
-				if comparePort(port.Port, p[0].Rule[0].TCPMin, p[0].Rule[0].TCPMax) {
-					continue
+				if port.Protocol == "tcp" {
+					if comparePort(port.Port, p[0].Rule[0].TCPMin, p[0].Rule[0].TCPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				} else {
-					fmt.Printf("hey this port shouldn't be here! (%v on %v)\n", port.Port, port.Server)
+					if comparePort(port.Port, p[0].Rule[0].UDPMin, p[0].Rule[0].UDPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				}
-
 			case strings.HasPrefix(port.Server, "prom"):
 				//fmt.Printf("row %v of the csv: This is a prom server\n", i+2)
-				if comparePort(port.Port, p[3].Rule[0].TCPMin, p[3].Rule[0].TCPMax) {
-					continue
+				if port.Protocol == "tcp" {
+					if comparePort(port.Port, p[3].Rule[0].TCPMin, p[3].Rule[0].TCPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				} else {
-					fmt.Printf("hey this port shouldn't be here! (%v on %v)\n", port.Port, port.Server)
+					if comparePort(port.Port, p[3].Rule[0].UDPMin, p[3].Rule[0].UDPMax) {
+						continue
+					} else {
+						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
+					}
 				}
 			default:
 				fmt.Printf("I'm not sure what this is? (%v)\n", port.Server)
@@ -106,6 +138,7 @@ func getYaml() []PortsAndServersRuleset {
 }
 
 func getCSV() []*Port {
+	fmt.Println("Getting the CSV file")
 	portsFile, err := os.OpenFile("ports-and-servers.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
