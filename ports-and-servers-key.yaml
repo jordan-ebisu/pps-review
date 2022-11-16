@@ -1,15 +1,20 @@
   - rule: 
     - server: lb
-      allowed_tcp_port_min: 1000
-      allowed_tcp_port_max: 2000
+      allowed_tcp_port_min: 1000 # p[0].Rule[0].TCPMin
+      allowed_tcp_port_max: 3000 # p[0].Rule[0].TCPMax
   - rule: 
     - server: ssh
-      allowed_tcp_port_min: 22
-      allowed_tcp_port_max: 22
+      allowed_tcp_port_min: 22 # p[1].Rule[0].TCPMin
+      allowed_tcp_port_max: 22 # p[1].Rule[0].TCPMax
   - rule: 
     - server: splunk
-      allowed_udp_port_min: 8000
-      allowed_udp_port_max: 9000
+      allowed_tcp_port_min: 8000 # p[2].Rule[0].TCPMin
+      allowed_tcp_port_max: 9000 # p[2].Rule[0].TCPMax
+  - rule: 
+    - server: prom
+      allowed_tcp_port_min: 5000 # p[3].Rule[0].TCPMin
+      allowed_tcp_port_max: 5000 # p[3].Rule[0].TCPMax
+
 #--------------------------------------------
 # The below also works:
 # - id: 1
