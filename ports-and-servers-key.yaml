@@ -1,0 +1,23 @@
+  - rule: 
+    - server: lb
+      allowed_tcp_port_min: 1000
+      allowed_tcp_port_max: 2000
+  - rule: 
+    - server: ssh
+      allowed_tcp_port_min: 22
+      allowed_tcp_port_max: 22
+  - rule: 
+    - server: splunk
+      allowed_udp_port_min: 8000
+      allowed_udp_port_max: 9000
+#--------------------------------------------
+# The below also works:
+# - id: 1
+#    rule:
+#    - server: lb
+#      port: 0
+#  - id: 2
+#    rule:
+#    - server: ssh
+#      port: 22
+  
