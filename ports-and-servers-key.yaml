@@ -2,26 +2,34 @@
     - server: lb
       allowed_tcp_port_min: 1000 # p[0].Rule[0].TCPMin
       allowed_tcp_port_max: 3000 # p[0].Rule[0].TCPMax
+      allowed_tcp_port_other: [25,37,89,1000,88]
       allowed_udp_port_min: 53 # p[0].Rule[0].UDPMin
       allowed_udp_port_max: 53 # p[0].Rule[0].UDPMax
+      allowed_udp_port_other: [25,37,89,1000,88]
   - rule: 
     - server: ssh
       allowed_tcp_port_min: 22 # p[1].Rule[0].TCPMin
       allowed_tcp_port_max: 22 # p[1].Rule[0].TCPMax
+      allowed_tcp_port_other: [25,37,89,1000,88]
       allowed_udp_port_min: 0 # p[1].Rule[0].UDPMin
       allowed_udp_port_max: 0 # p[1].Rule[0].UDPMax
+      allowed_udp_port_other: [25,37,89,1000,88]
   - rule: 
     - server: splunk
       allowed_tcp_port_min: 8000 # p[2].Rule[0].TCPMin
       allowed_tcp_port_max: 9000 # p[2].Rule[0].TCPMax
+      allowed_tcp_port_other: [25, 37, 89, 1000, 88]
       allowed_udp_port_min: 5 # p[2].Rule[0].UDPMin
       allowed_udp_port_max: 10 # p[2].Rule[0].UDPMax
+      allowed_udp_port_other: [25, 37, 89, 1000, 88]
   - rule: 
     - server: prom
       allowed_tcp_port_min: 5000 # p[3].Rule[0].TCPMin
       allowed_tcp_port_max: 5000 # p[3].Rule[0].TCPMax
+      allowed_tcp_port_other: [25, 37, 89, 1000, 88]
       allowed_udp_port_min: 0 # p[3].Rule[0].UDPMin
       allowed_udp_port_max: 0 # p[3].Rule[0].UDPMax
+      allowed_udp_port_other: [25, 37, 89, 1000, 88]
 
 #--------------------------------------------
 # The below also works:

@@ -29,8 +29,10 @@ type RuleItem struct {
 	Protocol string `yaml:"protocol"`
 	TCPMin   int    `yaml:"allowed_tcp_port_min"`
 	TCPMax   int    `yaml:"allowed_tcp_port_max"`
+	TCPOther []int    `yaml:"allowed_tcp_port_other"`
 	UDPMin   int    `yaml:"allowed_udp_port_min"`
 	UDPMax   int    `yaml:"allowed_udp_port_max"`
+	UDPOther []int    `yaml:"allowed_udp_port_othe"`
 }
 
 func main() {

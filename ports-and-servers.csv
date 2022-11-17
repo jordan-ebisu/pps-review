@@ -1,6 +1,6 @@
 delete_thisfield,also_deletethisfield,protocol,port_number,server
 delete,afdsafsa,tcp,0,"lb-sometext"
-delete,afdsafsa,tcp,1500,"lb-sometext"
+delete,afdsafsa,tcp,3001,"lb-sometext"
 delete,afdsafsa,tcp,53,"lb-sometext"
 delete,afdsafsa,tcp,9000,"splunk-sometext"
 delete,afdsafsa,udp,10,"splunk-sometext"
