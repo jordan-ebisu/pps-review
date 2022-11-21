@@ -30,15 +30,3 @@
       allowed_udp_port_min: 0 # p[3].Rule[0].UDPMin
       allowed_udp_port_max: 0 # p[3].Rule[0].UDPMax
       allowed_udp_port_other: [25, 37, 89, 1000, 88]
-
-#--------------------------------------------
-# The below also works:
-# - id: 1
-#    rule:
-#    - server: lb
-#      port: 0
-#  - id: 2
-#    rule:
-#    - server: ssh
-#      port: 22
-  
