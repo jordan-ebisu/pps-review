@@ -12,7 +12,9 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/andygrunwald/go-jira"
 	"github.com/gocarina/gocsv"
+	"github.com/joho/godotenv"
 )
 
 type Port struct {
@@ -69,7 +71,7 @@ func main() {
 			case strings.HasPrefix(port.Server, "splunk"):
 				//fmt.Printf("row %v of the csv: This is a splunk server\n", i+2)
 				if port.Protocol == "tcp" {
-					if comparePort(port.Port, p[2].Rule[0].TCPMin, p[2].Rule[0].TCPMax) {
+					if comparePort(port.Port, p[2].Rule[0].TCPMin, p[2].Rule[0].TCPMax) || containsPorts(p[2].Rule[0].TCPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -80,7 +82,7 @@ func main() {
 						updateCSV(record, path)
 					}
 				} else {
-					if comparePort(port.Port, p[2].Rule[0].UDPMin, p[2].Rule[0].UDPMax) {
+					if comparePort(port.Port, p[2].Rule[0].UDPMin, p[2].Rule[0].UDPMax) || containsPorts(p[2].Rule[0].UDPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -95,7 +97,7 @@ func main() {
 			case strings.HasPrefix(port.Server, "ssh"):
 				//fmt.Printf("row %v of the csv: This is a ssh server\n", i+2)
 				if port.Protocol == "tcp" {
-					if comparePort(port.Port, p[1].Rule[0].TCPMin, p[1].Rule[0].TCPMax) {
+					if comparePort(port.Port, p[1].Rule[0].TCPMin, p[1].Rule[0].TCPMax) || containsPorts(p[1].Rule[0].TCPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -106,7 +108,7 @@ func main() {
 						updateCSV(record, path)
 					}
 				} else {
-					if comparePort(port.Port, p[1].Rule[0].UDPMin, p[1].Rule[0].UDPMax) {
+					if comparePort(port.Port, p[1].Rule[0].UDPMin, p[1].Rule[0].UDPMax) || containsPorts(p[1].Rule[0].UDPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -120,7 +122,7 @@ func main() {
 			case strings.HasPrefix(port.Server, "lb"):
 				//fmt.Printf("row %v of the csv: This is a lb server\n", i+2)
 				if port.Protocol == "tcp" {
-					if comparePort(port.Port, p[0].Rule[0].TCPMin, p[0].Rule[0].TCPMax) {
+					if comparePort(port.Port, p[0].Rule[0].TCPMin, p[0].Rule[0].TCPMax) || containsPorts(p[0].Rule[0].TCPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -131,7 +133,7 @@ func main() {
 						updateCSV(record, path)
 					}
 				} else {
-					if comparePort(port.Port, p[0].Rule[0].UDPMin, p[0].Rule[0].UDPMax) {
+					if comparePort(port.Port, p[0].Rule[0].UDPMin, p[0].Rule[0].UDPMax) || containsPorts(p[0].Rule[0].UDPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -145,7 +147,7 @@ func main() {
 			case strings.HasPrefix(port.Server, "prom"):
 				//fmt.Printf("row %v of the csv: This is a prom server\n", i+2)
 				if port.Protocol == "tcp" {
-					if comparePort(port.Port, p[3].Rule[0].TCPMin, p[3].Rule[0].TCPMax) {
+					if comparePort(port.Port, p[3].Rule[0].TCPMin, p[3].Rule[0].TCPMax) || containsPorts(p[3].Rule[0].TCPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
@@ -156,19 +158,22 @@ func main() {
 						updateCSV(record, path)
 					}
 				} else {
-					if comparePort(port.Port, p[3].Rule[0].UDPMin, p[3].Rule[0].UDPMax) {
+					if comparePort(port.Port, p[3].Rule[0].UDPMin, p[3].Rule[0].UDPMax) || containsPorts(p[3].Rule[0].UDPOther, port.Port) {
 						continue
 					} else {
 						fmt.Printf("hey this port shouldn't be here! (%v %v on %v)\n", port.Protocol, port.Port, port.Server)
 						record := []string{
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
-
 						updateCSV(record, path)
 					}
 				}
 			default:
 				fmt.Printf("I'm not sure what this is? (%v)\n", port.Server)
+				record := []string{
+					port.Protocol, strconv.Itoa(port.Port), port.Server,
+				}
+				updateCSV(record, path)
 			}
 		}
 		//fmt.Printf("row %v: port %v is open on %v\n", i+2, port.Port, port.Server)
@@ -176,6 +181,66 @@ func main() {
 	totalPortsReviewed := len(ports)
 	fmt.Printf("Review completed: total number of combinations reviewed was %v\n", totalPortsReviewed)
 
+	err = godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tp := jira.BasicAuthTransport{
+		Username: os.Getenv("JIRA_USER"),
+		Password: os.Getenv("JIRA_TOKEN"),
+	}
+
+	jiraClient, err := jira.NewClient(tp.Client(), os.Getenv("JIRA_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	me, _, err := jiraClient.User.GetSelf()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	i := jira.Issue{
+		Fields: &jira.IssueFields{
+			Assignee:    me,
+			Description: "Test Issue",
+			Type: jira.IssueType{
+				Name: "Task",
+			},
+			Project: jira.Project{
+				Key: "AT",
+			},
+			Summary: "PPS Review " + month.String() + " " + strconv.Itoa(year),
+			Labels:  []string{"pps-review", strings.ToLower(month.String()) + "-" + strconv.Itoa(year)},
+		},
+	}
+	issue, resp, err := jiraClient.Issue.Create(&i)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%v has been created\n", issue.Key)
+
+	//issue, _, _ := jiraClient.Issue.Get("AT-1", nil)
+
+	//fmt.Printf("%s: %v\n", issue.Key, issue.Fields.Summary)
+
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	//csvReader := csv.NewReader(f)
+
+	attachmentName := "pps-" + strings.ToLower(month.String()) + "-" + strconv.Itoa(year) + "-deviations.csv"
+	_, _, err = jiraClient.Issue.PostAttachment(issue.Key, f, attachmentName)
+	if err != nil {
+		panic(err)
+	}
+	//csvWriter.Write(record)
+	//csvWriter.Flush()
 	// TODO create function that deletes the file
 	time.Sleep(10 * time.Second)
 	e := os.Remove(path)
@@ -204,7 +269,10 @@ func getYaml() []PortsAndServersRuleset {
 
 func getCSV() []*Port {
 	fmt.Println("Getting the CSV file")
-	portsFile, err := os.OpenFile("ports-and-servers.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	csvFilePath := os.Args[1]
+	fmt.Println(csvFilePath)
+
+	portsFile, err := os.OpenFile(csvFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
@@ -265,4 +333,14 @@ func updateCSV(record []string, path string) {
 		csvWriter.Flush()
 
 	}
+}
+
+// Checks if a port from the csv is in the TCPOther / UDPOther allowlist in the yaml
+func containsPorts(p []int, po int) bool {
+	for _, v := range p {
+		if v == po {
+			return true
+		}
+	}
+	return false
 }

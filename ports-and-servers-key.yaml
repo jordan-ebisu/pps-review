@@ -2,7 +2,7 @@
     - server: lb
       allowed_tcp_port_min: 1000 # p[0].Rule[0].TCPMin
       allowed_tcp_port_max: 3000 # p[0].Rule[0].TCPMax
-      allowed_tcp_port_other: [25,37,89,1000,88]
+      allowed_tcp_port_other: [2,3,84,1000,88, 53, 3001] # p[0].Rule[0].TCPOther
       allowed_udp_port_min: 53 # p[0].Rule[0].UDPMin
       allowed_udp_port_max: 53 # p[0].Rule[0].UDPMax
       allowed_udp_port_other: [25,37,89,1000,88]
@@ -18,7 +18,7 @@
     - server: splunk
       allowed_tcp_port_min: 8000 # p[2].Rule[0].TCPMin
       allowed_tcp_port_max: 9000 # p[2].Rule[0].TCPMax
-      allowed_tcp_port_other: [25, 37, 89, 1000, 88]
+      allowed_tcp_port_other: [25, 37, 89, 1000, 88, 9556]
       allowed_udp_port_min: 5 # p[2].Rule[0].UDPMin
       allowed_udp_port_max: 10 # p[2].Rule[0].UDPMax
       allowed_udp_port_other: [25, 37, 89, 1000, 88]
