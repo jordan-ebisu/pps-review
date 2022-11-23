@@ -37,36 +37,30 @@ type RuleItem struct {
 	TCPOther []int  `yaml:"allowed_tcp_port_other"`
 	UDPMin   int    `yaml:"allowed_udp_port_min"`
 	UDPMax   int    `yaml:"allowed_udp_port_max"`
-	UDPOther []int  `yaml:"allowed_udp_port_othe"`
+	UDPOther []int  `yaml:"allowed_udp_port_other"`
 }
 
 func main() {
-	fmt.Println("Starting the review")
-
 	p := getYaml()
-
-	// To access a specific port / server
-	//fmt.Printf("Port %v is allowed on %v\n", p[0].Rule[0].TCPMax, p[0].Rule[0].Server)
 
 	ports := getCSV()
 	year, month, _ := time.Now().Date()
 
-	path, err := os.Getwd()
+	deviationsFilePath, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 	}
 
 	yearString := strconv.Itoa(year)
-	path += "/" + "pps-" + month.String() + "-" + yearString + ".csv"
+	deviationsFilePath += "/" + "pps-" + strings.ToLower(month.String()) + "-" + yearString + ".csv"
 
-	fmt.Println(path)
+	fmt.Println(deviationsFilePath)
 
-	for _, port := range ports {
-
+	for i, port := range ports {
+		
 		if port.Port == 0 {
 			continue
 		} else {
-
 			switch {
 			case strings.HasPrefix(port.Server, "splunk"):
 				//fmt.Printf("row %v of the csv: This is a splunk server\n", i+2)
@@ -79,7 +73,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				} else {
 					if comparePort(port.Port, p[2].Rule[0].UDPMin, p[2].Rule[0].UDPMax) || containsPorts(p[2].Rule[0].UDPOther, port.Port) {
@@ -91,7 +85,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				}
 			case strings.HasPrefix(port.Server, "ssh"):
@@ -105,7 +99,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				} else {
 					if comparePort(port.Port, p[1].Rule[0].UDPMin, p[1].Rule[0].UDPMax) || containsPorts(p[1].Rule[0].UDPOther, port.Port) {
@@ -116,7 +110,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				}
 			case strings.HasPrefix(port.Server, "lb"):
@@ -130,7 +124,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				} else {
 					if comparePort(port.Port, p[0].Rule[0].UDPMin, p[0].Rule[0].UDPMax) || containsPorts(p[0].Rule[0].UDPOther, port.Port) {
@@ -141,7 +135,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				}
 			case strings.HasPrefix(port.Server, "prom"):
@@ -155,7 +149,7 @@ func main() {
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
 
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				} else {
 					if comparePort(port.Port, p[3].Rule[0].UDPMin, p[3].Rule[0].UDPMax) || containsPorts(p[3].Rule[0].UDPOther, port.Port) {
@@ -165,19 +159,21 @@ func main() {
 						record := []string{
 							port.Protocol, strconv.Itoa(port.Port), port.Server,
 						}
-						updateCSV(record, path)
+						updateCSV(record, deviationsFilePath)
 					}
 				}
+			case i == len(ports)-1:
+				fmt.Println("everything looks good")
 			default:
 				fmt.Printf("I'm not sure what this is? (%v)\n", port.Server)
 				record := []string{
 					port.Protocol, strconv.Itoa(port.Port), port.Server,
 				}
-				updateCSV(record, path)
+				updateCSV(record, deviationsFilePath)
 			}
 		}
-		//fmt.Printf("row %v: port %v is open on %v\n", i+2, port.Port, port.Server)
 	}
+
 	totalPortsReviewed := len(ports)
 	fmt.Printf("Review completed: total number of combinations reviewed was %v\n", totalPortsReviewed)
 
@@ -193,61 +189,97 @@ func main() {
 
 	jiraClient, err := jira.NewClient(tp.Client(), os.Getenv("JIRA_URL"))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
-	me, _, err := jiraClient.User.GetSelf()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	i := jira.Issue{
-		Fields: &jira.IssueFields{
-			Assignee:    me,
-			Description: "Test Issue",
-			Type: jira.IssueType{
-				Name: "Task",
-			},
-			Project: jira.Project{
-				Key: "AT",
-			},
-			Summary: "PPS Review " + month.String() + " " + strconv.Itoa(year),
-			Labels:  []string{"pps-review", strings.ToLower(month.String()) + "-" + strconv.Itoa(year)},
-		},
-	}
-	issue, resp, err := jiraClient.Issue.Create(&i)
+	jql := "labels=" + strings.ToLower(month.String()) + "-" + strconv.Itoa(year)
+	searchResults, resp, err := jiraClient.Issue.Search(jql, nil)
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println(string(body))
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
-	fmt.Printf("%v has been created\n", issue.Key)
-
-	//issue, _, _ := jiraClient.Issue.Get("AT-1", nil)
-
-	//fmt.Printf("%s: %v\n", issue.Key, issue.Fields.Summary)
-
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
-		panic(err)
-	}
-	//csvReader := csv.NewReader(f)
-
-	attachmentName := "pps-" + strings.ToLower(month.String()) + "-" + strconv.Itoa(year) + "-deviations.csv"
-	_, _, err = jiraClient.Issue.PostAttachment(issue.Key, f, attachmentName)
-	if err != nil {
-		panic(err)
-	}
-	//csvWriter.Write(record)
-	//csvWriter.Flush()
-	// TODO create function that deletes the file
-	time.Sleep(10 * time.Second)
-	e := os.Remove(path)
-	if e != nil {
-		log.Fatal(e)
+		fmt.Println(err)
 	}
 
+	if len(searchResults) != 0 {
+		//fmt.Printf("%v", issue.Key)
+		fmt.Printf("looks like there's already a ticket for this month\n")
+		time.Sleep(10 * time.Second)
+		fmt.Println("Removing the file locally")
+		e := os.Remove(deviationsFilePath)
+		if e != nil {
+			log.Fatal(e)
+		}
+		return
+
+	} else {
+		fmt.Println("no existing tickets for this month, continuing the review")
+
+		me, resp, err := jiraClient.User.GetSelf()
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
+		if err != nil {
+			fmt.Println(err)
+		}
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		i := jira.Issue{
+			Fields: &jira.IssueFields{
+				Assignee:    me,
+				Description: "Test Issue",
+				Type: jira.IssueType{
+					Name: "Task",
+				},
+				Project: jira.Project{
+					Key: "AT",
+				},
+				Summary: "PPS Review " + month.String() + " " + strconv.Itoa(year),
+				Labels:  []string{"pps-review", strings.ToLower(month.String()) + "-" + strconv.Itoa(year)},
+			},
+		}
+		newIssue, resp, err := jiraClient.Issue.Create(&i)
+		body, _ = ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Printf("%v has been created\n", newIssue.Key)
+
+		//issue, _, _ := jiraClient.Issue.Get("AT-1", nil)
+
+		//fmt.Printf("%s: %v\n", issue.Key, issue.Fields.Summary)
+
+		f, err := os.OpenFile(deviationsFilePath, os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+		//csvReader := csv.NewReader(f)
+
+		attachmentName := "pps-" + strings.ToLower(month.String()) + "-" + strconv.Itoa(year) + "-deviations.csv"
+		_, resp, err = jiraClient.Issue.PostAttachment(newIssue.Key, f, attachmentName)
+		body, _ = ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("uploading the attachment")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		time.Sleep(10 * time.Second)
+		fmt.Println("Removing the file locally")
+		e := os.Remove(deviationsFilePath)
+		if e != nil {
+			log.Fatal(e)
+		}
+	}
 }
 
 func getYaml() []PortsAndServersRuleset {
@@ -273,6 +305,7 @@ func getCSV() []*Port {
 	fmt.Println(csvFilePath)
 
 	portsFile, err := os.OpenFile(csvFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+
 	if err != nil {
 		panic(err)
 	}
