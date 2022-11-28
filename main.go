@@ -57,7 +57,7 @@ func main() {
 	fmt.Println(deviationsFilePath)
 
 	for i, port := range ports {
-		
+
 		if port.Port == 0 {
 			continue
 		} else {
@@ -287,7 +287,13 @@ func getYaml() []PortsAndServersRuleset {
 
 	var p []PortsAndServersRuleset
 
-	yamlFile, err := ioutil.ReadFile("ports-and-servers-key.yaml")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+	yamlFileName := os.Getenv("KEY_YML")
+	fmt.Println(yamlFileName)
+	yamlFile, err := ioutil.ReadFile(os.Getenv("KEY_YML"))
 	if err != nil {
 		log.Fatal("Failed to Read the Yaml File", err)
 	}
